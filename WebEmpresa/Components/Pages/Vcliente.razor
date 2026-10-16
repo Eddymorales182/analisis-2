@@ -1,0 +1,98 @@
+@page "/v_cliente"
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+
+<h1>Formulario de Clientes</h1>
+
+@if (getBranchesError || branches is null)
+{
+    <p>No se encontro la API.</p>
+}
+else
+{
+    <table class="table">
+        <tbody>
+        <tr>
+            <th>Id Cliente</th>
+            <th>Nombres</th>
+            <th>Apellidos</th>
+            <th>Direccion</th>
+            <th>Telefono</th>
+            <th>Fecha Nacimiento</th>
+        </tr>
+        </tbody>
+        @foreach (var branch in branches)
+        {
+            <tr>
+                <td>@branch.id_cliente</td>
+                <td>@branch.nombres</td>
+                <td>@branch.apellidos</td>
+                <td>@branch.direccion</td>
+                <td>@branch.telefono</td>
+                <td>@branch.fecha_nacimiento</td>
+            </tr>
+            
+        }
+    </table>
+}
+
+@code {
+    private IEnumerable<Cliente>? branches = Array.Empty<Cliente>();
+    private bool getBranchesError;
+    private bool shouldRender;
+
+    protected override bool ShouldRender() => shouldRender;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get,
+            "http://localhost:5118/api/Clientes");
+        request.Headers.Add("Accept", "application/vnd.github.v3+json");
+        request.Headers.Add("User-Agent", "HttpClientFactory-Sample");
+
+        //https://localhost:7290/api/Cliente
+
+        var client = ClientFactory.CreateClient();
+
+        using var response = await client.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            using var responseStream = await response.Content.ReadAsStreamAsync();
+            branches = await JsonSerializer.DeserializeAsync
+                <IEnumerable<Cliente>>(responseStream);
+        }
+        else
+        {
+            getBranchesError = true;
+        }
+
+        shouldRender = true;
+    }
+
+    public class Cliente
+
+    {
+
+       [JsonPropertyName("id_cliente")]
+        public Int32? id_cliente { get; set; }
+
+        [JsonPropertyName("nombres")]
+        public string? nombres { get; set; }
+        
+        [JsonPropertyName("apellidos")]
+        public string? apellidos { get; set; }
+
+      [JsonPropertyName("direccion")]
+        public string? direccion { get; set; }
+   
+      [JsonPropertyName("telefono")]
+        public string? telefono { get; set; }
+
+        [JsonPropertyName("fecha_nacimiento")]
+        public DateTime? fecha_nacimiento { get; set; }
+
+
+    }
+}
